@@ -1,0 +1,17 @@
+{
+    "folders": [
+        {
+            "path": "."
+        }
+    ],
+    "settings": {
+        "files.associations": {
+            "INTRINS.H": "cpp",
+            "ws2812.h": "c",
+            "stc8h.h": "c",
+            "stc.h": "c",
+            "stc32_stc8_usb.h": "c"
+        }
+    },
+    "extensions": {}
+}

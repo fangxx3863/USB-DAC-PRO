@@ -1,0 +1,11 @@
+".\obj\main.obj",
+".\obj\usb.obj",
+".\obj\usb_desc.obj",
+".\obj\usb_req_class.obj",
+".\obj\usb_req_std.obj",
+".\obj\usb_req_vendor.obj",
+".\obj\util.obj",
+".\obj\timer.obj",
+".\obj\WS2812.obj" 
+TO ".\obj\stc_usb_keyboard" 
+PRINT(".\obj\stc_usb_keyboard.m51") RAMSIZE(256) 

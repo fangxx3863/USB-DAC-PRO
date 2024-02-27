@@ -1,0 +1,216 @@
+C51 COMPILER V9.59.0.0   USB_REQ_CLASS                                                     09/24/2022 21:20:02 PAGE 1   
+
+
+C51 COMPILER V9.59.0.0, COMPILATION OF MODULE USB_REQ_CLASS
+OBJECT MODULE PLACED IN .\obj\usb_req_class.obj
+COMPILER INVOKED BY: C:\Program Files\KEIL5\C51\BIN\C51.EXE src\usb_req_class.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXT
+                    -END PRINT(.\obj\usb_req_class.lst) TABS(2) OBJECT(.\obj\usb_req_class.obj)
+
+line level    source
+
+   1          /*---------------------------------------------------------------------*/
+   2          /* --- STC MCU Limited ------------------------------------------------*/
+   3          /* --- STC 1T Series MCU Demo Programme -------------------------------*/
+   4          /* --- Mobile: (86)13922805190 ----------------------------------------*/
+   5          /* --- Fax: 86-0513-55012956,55012947,55012969 ------------------------*/
+   6          /* --- Tel: 86-0513-55012928,55012929,55012966 ------------------------*/
+   7          /* --- Web: www.STCMCU.com --------------------------------------------*/
+   8          /* --- Web: www.STCMCUDATA.com  ---------------------------------------*/
+   9          /* --- QQ:  800003751 -------------------------------------------------*/
+  10          /*---------------------------------------------------------------------*/
+  11          
+  12          #include "stc.h"
+  13          #include "usb.h"
+  14          #include "usb_req_class.h"
+  15          
+  16          BYTE bHidIdle;
+  17          BYTE keyMap[8] = {0x07, 0x09, 0x00, 0x0d, 0x0e, 0x06, 0x10, 0x28};
+  18          
+  19          sbit LED_NUM        = P6^7;
+  20          sbit LED_CAPS       = P6^6;
+  21          sbit LED_SCROLL     = P6^5;
+  22          
+  23          void usb_req_class()
+  24          {
+  25   1          switch (Setup.bRequest)
+  26   1          {
+  27   2          case GET_REPORT:
+  28   2              usb_get_report();
+  29   2              break;
+  30   2          case SET_REPORT:
+  31   2              usb_set_report();
+  32   2              break;
+  33   2          case GET_IDLE:
+  34   2              usb_get_idle();
+  35   2              break;
+  36   2          case SET_IDLE:
+  37   2              usb_set_idle();
+  38   2              break;
+  39   2          case GET_PROTOCOL:
+  40   2              usb_get_protocol();
+  41   2              break;
+  42   2          case SET_PROTOCOL:
+  43   2              usb_set_protocol();
+  44   2              break;
+  45   2          default:
+  46   2              usb_setup_stall();
+  47   2              return;
+  48   2          }
+  49   1      }
+  50          
+  51          void usb_get_report()
+  52          {
+  53   1          if ((DeviceState != DEVSTATE_CONFIGURED) ||
+  54   1              (Setup.bmRequestType != (IN_DIRECT | CLASS_REQUEST | INTERFACE_RECIPIENT)))
+C51 COMPILER V9.59.0.0   USB_REQ_CLASS                                                     09/24/2022 21:20:02 PAGE 2   
+
+  55   1          {
+  56   2              usb_setup_stall();
+  57   2              return;
+  58   2          }
+  59   1      
+  60   1          Ep0State.pData = UsbBuffer;
+  61   1          Ep0State.wSize = Setup.wLength;
+  62   1      
+  63   1          usb_setup_in();
+  64   1      }
+  65          
+  66          void usb_set_report()
+  67          {
+  68   1          if ((DeviceState != DEVSTATE_CONFIGURED) ||
+  69   1              (Setup.bmRequestType != (OUT_DIRECT | CLASS_REQUEST | INTERFACE_RECIPIENT)))
+  70   1          {
+  71   2              usb_setup_stall();
+  72   2              return;
+  73   2          }
+  74   1      
+  75   1          Ep0State.pData = UsbBuffer;
+  76   1          Ep0State.wSize = Setup.wLength;
+  77   1      
+  78   1          usb_setup_out();
+  79   1      }
+  80          
+  81          void usb_get_idle()
+  82          {
+  83   1          if ((DeviceState != DEVSTATE_CONFIGURED) ||
+  84   1              (Setup.bmRequestType != (IN_DIRECT | CLASS_REQUEST | INTERFACE_RECIPIENT)))
+  85   1          {
+  86   2              usb_setup_stall();
+  87   2              return;
+  88   2          }
+  89   1      
+  90   1          Ep0State.pData = &bHidIdle;
+  91   1          Ep0State.wSize = 1;
+  92   1      
+  93   1          usb_setup_in();
+  94   1      }
+  95          
+  96          void usb_set_idle()
+  97          {
+  98   1          if ((DeviceState != DEVSTATE_CONFIGURED) ||
+  99   1              (Setup.bmRequestType != (OUT_DIRECT | CLASS_REQUEST | INTERFACE_RECIPIENT)))
+ 100   1          {
+ 101   2              usb_setup_stall();
+ 102   2              return;
+ 103   2          }
+ 104   1      
+ 105   1          bHidIdle = Setup.wValueH;
+ 106   1      
+ 107   1          usb_setup_status();
+ 108   1      }
+ 109          
+ 110          void usb_get_protocol()
+ 111          {
+ 112   1          usb_setup_stall();
+ 113   1      }
+ 114          
+ 115          void usb_set_protocol()
+ 116          {
+C51 COMPILER V9.59.0.0   USB_REQ_CLASS                                                     09/24/2022 21:20:02 PAGE 3   
+
+ 117   1          usb_setup_stall();
+ 118   1      }
+ 119          
+ 120          void usb_class_out()
+ 121          {
+ 122   1          BYTE led;
+ 123   1          
+ 124   1          if (usb_bulk_intr_out(UsbBuffer, 1) == 1)
+ 125   1          {
+ 126   2              P4M0 &= ~0x01;
+ 127   2              P4M1 &= ~0x01;
+ 128   2              P6M0 &= ~0xe0;
+ 129   2              P6M1 &= ~0xe0;
+ 130   2              P40 = 0;
+ 131   2              
+ 132   2              led = UsbBuffer[0];
+ 133   2              LED_NUM = !(led & 0x01);
+ 134   2              LED_CAPS = !(led & 0x02);
+ 135   2              LED_SCROLL = !(led & 0x04);
+ 136   2          }
+ 137   1      }
+ 138          
+ 139          
+ 140          void usb_class_in()
+ 141          {
+ 142   1          BYTE key[16];
+ 143   1          BYTE i;
+ 144   1          BYTE p;
+ 145   1          
+ 146   1          if (DeviceState != DEVSTATE_CONFIGURED)
+ 147   1              return;
+ 148   1      
+ 149   1          if (!UsbInBusy)
+ 150   1          {
+ 151   2              for (i=0; i<16; i++) {
+ 152   3                  key[i] = 0;
+ 153   3              }
+ 154   2      
+ 155   2              for (i=0; i<8; i++) {
+ 156   3                  if (~P1 & (1 << i)) {
+ 157   4                      for (p=0; p<14; p++) {
+ 158   5                          if (key[p+2] == 0x00) {
+ 159   6                              key[p+2] = keyMap[i];
+ 160   6                              break;
+ 161   6                          }
+ 162   5                      }
+ 163   4                  } else {
+ 164   4                      for (p=0; p<14; p++) {
+ 165   5                          if (keyMap[i] && key[i+2] == keyMap[i]) {
+ 166   6                              key[i+2] = 0x00;
+ 167   6                              break;
+ 168   6                          }
+ 169   5                      }
+ 170   4                  }
+ 171   3              }
+ 172   2      
+ 173   2      
+ 174   2              IE2 &= ~0x80;   //EUSB = 0;
+ 175   2              UsbInBusy = 1;
+ 176   2              usb_write_reg(INDEX, 1);
+ 177   2              for (i=0; i<16; i++)
+ 178   2              {
+C51 COMPILER V9.59.0.0   USB_REQ_CLASS                                                     09/24/2022 21:20:02 PAGE 4   
+
+ 179   3                  usb_write_reg(FIFO1, key[i]);
+ 180   3              }
+ 181   2              usb_write_reg(INCSR1, INIPRDY);
+ 182   2              IE2 |= 0x80;    //EUSB = 1;
+ 183   2          }
+ 184   1      }
+ 185          
+ 186          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    452    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      9      18
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

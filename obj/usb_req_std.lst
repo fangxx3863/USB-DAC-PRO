@@ -1,0 +1,607 @@
+C51 COMPILER V9.59.0.0   USB_REQ_STD                                                       09/24/2022 21:20:02 PAGE 1   
+
+
+C51 COMPILER V9.59.0.0, COMPILATION OF MODULE USB_REQ_STD
+OBJECT MODULE PLACED IN .\obj\usb_req_std.obj
+COMPILER INVOKED BY: C:\Program Files\KEIL5\C51\BIN\C51.EXE src\usb_req_std.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEN
+                    -D PRINT(.\obj\usb_req_std.lst) TABS(2) OBJECT(.\obj\usb_req_std.obj)
+
+line level    source
+
+   1          /*---------------------------------------------------------------------*/
+   2          /* --- STC MCU Limited ------------------------------------------------*/
+   3          /* --- STC 1T Series MCU Demo Programme -------------------------------*/
+   4          /* --- Mobile: (86)13922805190 ----------------------------------------*/
+   5          /* --- Fax: 86-0513-55012956,55012947,55012969 ------------------------*/
+   6          /* --- Tel: 86-0513-55012928,55012929,55012966 ------------------------*/
+   7          /* --- Web: www.STCMCU.com --------------------------------------------*/
+   8          /* --- Web: www.STCMCUDATA.com  ---------------------------------------*/
+   9          /* --- QQ:  800003751 -------------------------------------------------*/
+  10          /* 濡傛灉瑕佸湪绋嬪簭涓娇鐢ㄦ浠ｇ爜,璇峰湪绋嬪簭涓敞鏄庝娇鐢ㄤ簡STC
+             -鐨勮祫鏂欏強绋嬪簭        */
+  11          /*---------------------------------------------------------------------*/
+  12          
+  13          #include "stc.h"
+  14          #include "usb.h"
+  15          #include "usb_desc.h"
+  16          #include "usb_req_std.h"
+  17          #include "usb_req_class.h"
+  18          
+  19          void usb_req_std()
+  20          {
+  21   1          switch (Setup.bRequest)
+  22   1          {
+  23   2          case GET_STATUS:
+  24   2              usb_get_status();
+  25   2              break;
+  26   2          case CLEAR_FEATURE:
+  27   2              usb_clear_feature();
+  28   2              break;
+  29   2          case SET_FEATURE:
+  30   2              usb_set_feature();
+  31   2              break;
+  32   2          case SET_ADDRESS:
+  33   2              usb_set_address();
+  34   2              break;
+  35   2          case GET_DESCRIPTOR:
+  36   2              usb_get_descriptor();
+  37   2              break;
+  38   2          case SET_DESCRIPTOR:
+  39   2              usb_set_descriptor();
+  40   2              break;
+  41   2          case GET_CONFIGURATION:
+  42   2              usb_get_configuration();
+  43   2              break;
+  44   2          case SET_CONFIGURATION:
+  45   2              usb_set_configuration();
+  46   2              break;
+  47   2          case GET_INTERFACE:
+  48   2              usb_get_interface();
+  49   2              break;
+  50   2          case SET_INTERFACE:
+  51   2              usb_set_interface();
+  52   2              break;
+  53   2          case SYNCH_FRAME:
+C51 COMPILER V9.59.0.0   USB_REQ_STD                                                       09/24/2022 21:20:02 PAGE 2   
+
+  54   2              usb_synch_frame();
+  55   2              break;
+  56   2          default:
+  57   2              usb_setup_stall();
+  58   2              return;
+  59   2          }
+  60   1      }
+  61          
+  62          void usb_get_status()
+  63          {
+  64   1          BYTE ep;
+  65   1          
+  66   1          if (((Setup.bmRequestType & DIRECT_MASK) != IN_DIRECT) ||
+  67   1              (Setup.wValueH != 0) ||
+  68   1              (Setup.wValueL != 0) ||
+  69   1              (Setup.wLength != 2))
+  70   1          {
+  71   2              usb_setup_stall();
+  72   2              return;
+  73   2          }
+  74   1          
+  75   1          switch (Setup.bmRequestType & RECIPIENT_MASK)
+  76   1          {
+  77   2          case DEVICE_RECIPIENT:
+  78   2              if ((Setup.wIndexH != 0) ||
+  79   2                  (Setup.wIndexL != 0))
+  80   2              {
+  81   3                  usb_setup_stall();
+  82   3                  return;
+  83   3              }
+  84   2              else
+  85   2              {
+  86   3                  Ep0State.pData = PACKET0;
+  87   3                  Ep0State.wSize = 2;
+  88   3              }
+  89   2              break;
+  90   2          case INTERFACE_RECIPIENT:
+  91   2              if ((DeviceState != DEVSTATE_CONFIGURED) ||
+  92   2                  (Setup.wIndexH != 0) ||
+  93   2                  (Setup.wIndexL != 0))
+  94   2              {
+  95   3                  usb_setup_stall();
+  96   3                  return;
+  97   3              }
+  98   2              else
+  99   2              {
+ 100   3                  Ep0State.pData = PACKET0;
+ 101   3                  Ep0State.wSize = 2;
+ 102   3              }
+ 103   2              break;
+ 104   2          case ENDPOINT_RECIPIENT:
+ 105   2              if ((DeviceState != DEVSTATE_CONFIGURED) ||
+ 106   2                  (Setup.wIndexH != 0))
+ 107   2              {
+ 108   3                  usb_setup_stall();
+ 109   3                  return;
+ 110   3              }
+ 111   2              else
+ 112   2              {
+ 113   3                  ep = Setup.wIndexL & 0x0f;
+ 114   3                  switch (Setup.wIndexL)
+ 115   3                  {
+C51 COMPILER V9.59.0.0   USB_REQ_STD                                                       09/24/2022 21:20:02 PAGE 3   
+
+ 116   4      #ifdef EN_EP1IN
+ 117   4                  case EP1_IN:
+ 118   4      #endif
+ 119   4      #ifdef EN_EP2IN
+                          case EP2_IN:
+              #endif
+ 122   4      #ifdef EN_EP3IN
+                          case EP3_IN:
+              #endif
+ 125   4      #ifdef EN_EP4IN
+                          case EP4_IN:
+              #endif
+ 128   4      #ifdef EN_EP5IN
+                          case EP5_IN:
+              #endif
+ 131   4      #if (defined(EN_EP1IN) || defined(EN_EP2IN) || defined(EN_EP3IN) || defined(EN_EP4IN) || defined(EN_EP5IN)
+             -)
+ 132   4                      if (InEpState & (1 << ep))
+ 133   4                      {
+ 134   5                          Ep0State.pData = PACKET1;
+ 135   5                          Ep0State.wSize = 2;
+ 136   5                      }
+ 137   4                      else
+ 138   4                      {
+ 139   5                          Ep0State.pData = PACKET0;
+ 140   5                          Ep0State.wSize = 2;
+ 141   5                      }
+ 142   4                      break;
+ 143   4      #endif
+ 144   4      #ifdef EN_EP1OUT
+ 145   4                  case EP1_OUT:
+ 146   4      #endif
+ 147   4      #ifdef EN_EP2OUT
+                          case EP2_OUT:
+              #endif
+ 150   4      #ifdef EN_EP3OUT
+                          case EP3_OUT:
+              #endif
+ 153   4      #ifdef EN_EP4OUT
+                          case EP4_OUT:
+              #endif
+ 156   4      #ifdef EN_EP5OUT
+                          case EP5_OUT:
+              #endif
+ 159   4      #if (defined(EN_EP1OUT) || defined(EN_EP2OUT) || defined(EN_EP3OUT) || defined(EN_EP4OUT) || defined(EN_EP
+             -5OUT))
+ 160   4                      if (OutEpState & (1 << ep))
+ 161   4                      {
+ 162   5                          Ep0State.pData = PACKET1;
+ 163   5                          Ep0State.wSize = 2;
+ 164   5                      }
+ 165   4                      else
+ 166   4                      {
+ 167   5                          Ep0State.pData = PACKET0;
+ 168   5                          Ep0State.wSize = 2;
+ 169   5                      }
+ 170   4                      break;
+ 171   4      #endif
+ 172   4                  default:
+ 173   4                      usb_setup_stall();
+ 174   4                      return;
+ 175   4                  }
+C51 COMPILER V9.59.0.0   USB_REQ_STD                                                       09/24/2022 21:20:02 PAGE 4   
+
+ 176   3              }
+ 177   2              break;
+ 178   2          default:
+ 179   2              usb_setup_stall();
+ 180   2              return;
+ 181   2          }
+ 182   1      
+ 183   1          usb_setup_in();
+ 184   1      }
+ 185          
+ 186          void usb_clear_feature()
+ 187          {
+ 188   1          BYTE ep;
+ 189   1          
+ 190   1          if ((DeviceState != DEVSTATE_CONFIGURED) ||
+ 191   1              (Setup.bmRequestType != (OUT_DIRECT | STANDARD_REQUEST | ENDPOINT_RECIPIENT)) ||
+ 192   1              (Setup.wIndexH != 0) ||
+ 193   1              (Setup.wValueH != 0) ||
+ 194   1              (Setup.wValueL != ENDPOINT_HALT) ||
+ 195   1              (Setup.wLength != 0))
+ 196   1          {
+ 197   2              usb_setup_stall();
+ 198   2              return;
+ 199   2          }
+ 200   1          
+ 201   1          ep = Setup.wIndexL & 0x0f;
+ 202   1          switch (Setup.wIndexL)
+ 203   1          {
+ 204   2      #ifdef EN_EP1IN
+ 205   2          case EP1_IN:
+ 206   2      #endif
+ 207   2      #ifdef EN_EP2IN
+                  case EP2_IN:
+              #endif
+ 210   2      #ifdef EN_EP3IN
+                  case EP3_IN:
+              #endif
+ 213   2      #ifdef EN_EP4IN
+                  case EP4_IN:
+              #endif
+ 216   2      #ifdef EN_EP5IN
+                  case EP5_IN:
+              #endif
+ 219   2      #if (defined(EN_EP1IN) || defined(EN_EP2IN) || defined(EN_EP3IN) || defined(EN_EP4IN) || defined(EN_EP5IN)
+             -)
+ 220   2              InEpState &= ~(1 << ep);
+ 221   2              usb_write_reg(INDEX, ep);
+ 222   2              usb_write_reg(INCSR1, INCLRDT);
+ 223   2              usb_write_reg(INDEX, 0);
+ 224   2              break;
+ 225   2      #endif
+ 226   2      #ifdef EN_EP1OUT
+ 227   2          case EP1_OUT:
+ 228   2      #endif
+ 229   2      #ifdef EN_EP2OUT
+                  case EP2_OUT:
+              #endif
+ 232   2      #ifdef EN_EP3OUT
+                  case EP3_OUT:
+              #endif
+ 235   2      #ifdef EN_EP4OUT
+                  case EP4_OUT:
+C51 COMPILER V9.59.0.0   USB_REQ_STD                                                       09/24/2022 21:20:02 PAGE 5   
+
+              #endif
+ 238   2      #ifdef EN_EP5OUT
+                  case EP5_OUT:
+              #endif
+ 241   2      #if (defined(EN_EP1OUT) || defined(EN_EP2OUT) || defined(EN_EP3OUT) || defined(EN_EP4OUT) || defined(EN_EP
+             -5OUT))
+ 242   2              OutEpState &= ~(1 << ep);
+ 243   2              usb_write_reg(INDEX, ep);
+ 244   2              usb_write_reg(OUTCSR1, OUTCLRDT);
+ 245   2              usb_write_reg(INDEX, 0);
+ 246   2              break;
+ 247   2      #endif
+ 248   2          default:
+ 249   2              usb_setup_stall();
+ 250   2              return;
+ 251   2          }
+ 252   1      
+ 253   1          usb_setup_status();
+ 254   1      }
+ 255          
+ 256          void usb_set_feature()
+ 257          {
+ 258   1          BYTE ep;
+ 259   1          
+ 260   1          if ((DeviceState != DEVSTATE_CONFIGURED) ||
+ 261   1              (Setup.bmRequestType != (OUT_DIRECT | STANDARD_REQUEST | ENDPOINT_RECIPIENT)) ||
+ 262   1              (Setup.wIndexH != 0) ||
+ 263   1              (Setup.wValueH != 0) ||
+ 264   1              (Setup.wValueL != ENDPOINT_HALT) ||
+ 265   1              (Setup.wLength != 0))
+ 266   1          {
+ 267   2              usb_setup_stall();
+ 268   2              return;
+ 269   2          }
+ 270   1          
+ 271   1          ep = Setup.wIndexL & 0x0f;
+ 272   1          switch (Setup.wIndexL)
+ 273   1          {
+ 274   2      #ifdef EN_EP1IN
+ 275   2          case EP1_IN:
+ 276   2      #endif
+ 277   2      #ifdef EN_EP2IN
+                  case EP2_IN:
+              #endif
+ 280   2      #ifdef EN_EP3IN
+                  case EP3_IN:
+              #endif
+ 283   2      #ifdef EN_EP4IN
+                  case EP4_IN:
+              #endif
+ 286   2      #ifdef EN_EP5IN
+                  case EP5_IN:
+              #endif
+ 289   2      #if (defined(EN_EP1IN) || defined(EN_EP2IN) || defined(EN_EP3IN) || defined(EN_EP4IN) || defined(EN_EP5IN)
+             -)
+ 290   2              InEpState |= (1 << ep);
+ 291   2              usb_write_reg(INDEX, ep);
+ 292   2              usb_write_reg(INCSR1, INSDSTL);
+ 293   2              usb_write_reg(INDEX, 0);
+ 294   2              break;
+ 295   2      #endif
+ 296   2      #ifdef EN_EP1OUT
+C51 COMPILER V9.59.0.0   USB_REQ_STD                                                       09/24/2022 21:20:02 PAGE 6   
+
+ 297   2          case EP1_OUT:
+ 298   2      #endif
+ 299   2      #ifdef EN_EP2OUT
+                  case EP2_OUT:
+              #endif
+ 302   2      #ifdef EN_EP3OUT
+                  case EP3_OUT:
+              #endif
+ 305   2      #ifdef EN_EP4OUT
+                  case EP4_OUT:
+              #endif
+ 308   2      #ifdef EN_EP5OUT
+                  case EP5_OUT:
+              #endif
+ 311   2      #if (defined(EN_EP1OUT) || defined(EN_EP2OUT) || defined(EN_EP3OUT) || defined(EN_EP4OUT) || defined(EN_EP
+             -5OUT))
+ 312   2              OutEpState |= (1 << ep);
+ 313   2              usb_write_reg(INDEX, ep);
+ 314   2              usb_write_reg(OUTCSR1, OUTSDSTL);
+ 315   2              usb_write_reg(INDEX, 0);
+ 316   2              break;
+ 317   2      #endif
+ 318   2          default:
+ 319   2              usb_setup_stall();
+ 320   2              return;
+ 321   2          }
+ 322   1      
+ 323   1          usb_setup_status();
+ 324   1      }
+ 325          
+ 326          void usb_set_address()
+ 327          {
+ 328   1          BYTE addr;
+ 329   1          
+ 330   1          if ((Setup.bmRequestType != (OUT_DIRECT | STANDARD_REQUEST | DEVICE_RECIPIENT)) ||
+ 331   1              (Setup.wIndexH != 0) ||
+ 332   1              (Setup.wIndexL != 0) ||
+ 333   1              (Setup.wValueH != 0) ||
+ 334   1              (Setup.wValueL >= 0x80) ||
+ 335   1              (Setup.wLength != 0))
+ 336   1          {
+ 337   2              usb_setup_stall();
+ 338   2              return;
+ 339   2          }
+ 340   1          
+ 341   1          addr = Setup.wValueL;
+ 342   1          usb_write_reg(FADDR, addr);
+ 343   1          if (addr != 0)
+ 344   1          {
+ 345   2              DeviceState = DEVSTATE_ADDRESS;
+ 346   2          }
+ 347   1          else
+ 348   1          {
+ 349   2              DeviceState = DEVSTATE_DEFAULT;
+ 350   2          }
+ 351   1      
+ 352   1          usb_setup_status();
+ 353   1      }
+ 354          
+ 355          void usb_get_descriptor()
+ 356          {
+ 357   1          if ((Setup.bmRequestType & DIRECT_MASK) != IN_DIRECT)
+C51 COMPILER V9.59.0.0   USB_REQ_STD                                                       09/24/2022 21:20:02 PAGE 7   
+
+ 358   1          {
+ 359   2              usb_setup_stall();
+ 360   2              return;
+ 361   2          }
+ 362   1          
+ 363   1          switch (Setup.wValueH)
+ 364   1          {
+ 365   2          case DESC_DEVICE:
+ 366   2              Ep0State.pData = DEVICEDESC;
+ 367   2              Ep0State.wSize = sizeof(DEVICEDESC);
+ 368   2              break;
+ 369   2          case DESC_CONFIGURATION:
+ 370   2              Ep0State.pData = CONFIGDESC;
+ 371   2              Ep0State.wSize = sizeof(CONFIGDESC);
+ 372   2              break;
+ 373   2          case DESC_STRING:
+ 374   2              switch (Setup.wValueL)
+ 375   2              {
+ 376   3              case 0:
+ 377   3                  Ep0State.pData = LANGIDDESC;
+ 378   3                  Ep0State.wSize = sizeof(LANGIDDESC);
+ 379   3                  break;
+ 380   3              case 1:
+ 381   3                  Ep0State.pData = MANUFACTDESC;
+ 382   3                  Ep0State.wSize = sizeof(MANUFACTDESC);
+ 383   3                  break;
+ 384   3              case 2:
+ 385   3                  Ep0State.pData = PRODUCTDESC;
+ 386   3                  Ep0State.wSize = sizeof(PRODUCTDESC);
+ 387   3                  break;
+ 388   3              default:
+ 389   3                  usb_setup_stall();
+ 390   3                  return;
+ 391   3              }
+ 392   2              break;
+ 393   2          case DESC_HIDREPORT:
+ 394   2              Ep0State.pData = HIDREPORTDESC;
+ 395   2              Ep0State.wSize = sizeof(HIDREPORTDESC);
+ 396   2              break;
+ 397   2          default:
+ 398   2              usb_setup_stall();
+ 399   2              return;
+ 400   2          }
+ 401   1          
+ 402   1          if (Ep0State.wSize > Setup.wLength)
+ 403   1          {
+ 404   2              Ep0State.wSize = Setup.wLength;
+ 405   2          }
+ 406   1      
+ 407   1          usb_setup_in();
+ 408   1      }
+ 409          
+ 410          void usb_set_descriptor()
+ 411          {
+ 412   1          usb_setup_stall();
+ 413   1      }
+ 414          
+ 415          void usb_get_configuration()
+ 416          {
+ 417   1          if ((Setup.bmRequestType != (IN_DIRECT | STANDARD_REQUEST | DEVICE_RECIPIENT)) ||
+ 418   1              (Setup.wValueH != 0) ||
+ 419   1              (Setup.wValueL != 0) ||
+C51 COMPILER V9.59.0.0   USB_REQ_STD                                                       09/24/2022 21:20:02 PAGE 8   
+
+ 420   1              (Setup.wIndexH != 0) ||
+ 421   1              (Setup.wIndexL != 0) ||
+ 422   1              (Setup.wLength != 1))
+ 423   1          {
+ 424   2              usb_setup_stall();
+ 425   2              return;
+ 426   2          }
+ 427   1          
+ 428   1          if (DeviceState == DEVSTATE_CONFIGURED)
+ 429   1          {
+ 430   2              Ep0State.pData = PACKET1;
+ 431   2              Ep0State.wSize = 1;
+ 432   2          }
+ 433   1          else
+ 434   1          {
+ 435   2              Ep0State.pData = PACKET0;
+ 436   2              Ep0State.wSize = 1;
+ 437   2          }
+ 438   1      
+ 439   1          usb_setup_in();
+ 440   1      }
+ 441          
+ 442          void usb_set_configuration()
+ 443          {
+ 444   1          if ((DeviceState == DEVSTATE_DEFAULT) ||
+ 445   1              (Setup.bmRequestType != (OUT_DIRECT | STANDARD_REQUEST | DEVICE_RECIPIENT)) ||
+ 446   1              (Setup.wValueH != 0) ||
+ 447   1              (Setup.wIndexH != 0) ||
+ 448   1              (Setup.wIndexL != 0) ||
+ 449   1              (Setup.wLength != 0))
+ 450   1          {
+ 451   2              usb_setup_stall();
+ 452   2              return;
+ 453   2          }
+ 454   1          
+ 455   1          if (Setup.wValueL == 1)
+ 456   1          {
+ 457   2              DeviceState = DEVSTATE_CONFIGURED;
+ 458   2              InEpState = 0x00;
+ 459   2              OutEpState = 0x00;
+ 460   2      #ifdef EN_EP1IN
+ 461   2              usb_write_reg(INDEX, 1);
+ 462   2              usb_write_reg(INCSR2, INMODEIN);
+ 463   2              usb_write_reg(INMAXP, EP1IN_SIZE / 8);
+ 464   2      #endif
+ 465   2      #ifdef EN_EP2IN
+                      usb_write_reg(INDEX, 2);
+                      usb_write_reg(INCSR2, INMODEIN);
+                      usb_write_reg(INMAXP, EP2IN_SIZE / 8);
+              #endif
+ 470   2      #ifdef EN_EP3IN
+                      usb_write_reg(INDEX, 3);
+                      usb_write_reg(INCSR2, INMODEIN);
+                      usb_write_reg(INMAXP, EP3IN_SIZE / 8);
+              #endif
+ 475   2      #ifdef EN_EP4IN
+                      usb_write_reg(INDEX, 4);
+                      usb_write_reg(INCSR2, INMODEIN);
+                      usb_write_reg(INMAXP, EP4IN_SIZE / 8);
+              #endif
+ 480   2      #ifdef EN_EP5IN
+                      usb_write_reg(INDEX, 5);
+C51 COMPILER V9.59.0.0   USB_REQ_STD                                                       09/24/2022 21:20:02 PAGE 9   
+
+                      usb_write_reg(INCSR2, INMODEIN);
+                      usb_write_reg(INMAXP, EP5IN_SIZE / 8);
+              #endif
+ 485   2      #ifdef EN_EP1OUT
+ 486   2              usb_write_reg(INDEX, 1);
+ 487   2              usb_write_reg(INCSR2, INMODEOUT);
+ 488   2              usb_write_reg(OUTMAXP, EP1OUT_SIZE / 8);
+ 489   2      #endif
+ 490   2      #ifdef EN_EP2OUT
+                      usb_write_reg(INDEX, 2);
+                      usb_write_reg(INCSR2, INMODEOUT);
+                      usb_write_reg(OUTMAXP, EP2OUT_SIZE / 8);
+              #endif
+ 495   2      #ifdef EN_EP3OUT
+                      usb_write_reg(INDEX, 3);
+                      usb_write_reg(INCSR2, INMODEOUT);
+                      usb_write_reg(OUTMAXP, EP3OUT_SIZE / 8);
+              #endif
+ 500   2      #ifdef EN_EP4OUT
+                      usb_write_reg(INDEX, 4);
+                      usb_write_reg(INCSR2, INMODEOUT);
+                      usb_write_reg(OUTMAXP, EP4OUT_SIZE / 8);
+              #endif
+ 505   2      #ifdef EN_EP5OUT
+                      usb_write_reg(INDEX, 5);
+                      usb_write_reg(INCSR2, INMODEOUT);
+                      usb_write_reg(OUTMAXP, EP5OUT_SIZE / 8);
+              #endif
+ 510   2              usb_write_reg(INDEX, 0);
+ 511   2          }
+ 512   1          else
+ 513   1          {
+ 514   2              DeviceState = DEVSTATE_ADDRESS;
+ 515   2              InEpState = 0xff;
+ 516   2              OutEpState = 0xff;
+ 517   2          }
+ 518   1      
+ 519   1          usb_setup_status();
+ 520   1      }
+ 521          
+ 522          void usb_get_interface()
+ 523          {
+ 524   1          if ((DeviceState != DEVSTATE_CONFIGURED) ||
+ 525   1              (Setup.bmRequestType != (IN_DIRECT | STANDARD_REQUEST | INTERFACE_RECIPIENT)) ||
+ 526   1              (Setup.wValueH != 0) ||
+ 527   1              (Setup.wIndexH != 0) ||
+ 528   1              (Setup.wLength != 1))
+ 529   1          {
+ 530   2              usb_setup_stall();
+ 531   2              return;
+ 532   2          }
+ 533   1          
+ 534   1          Ep0State.pData = PACKET0;
+ 535   1          Ep0State.wSize = 1;
+ 536   1          
+ 537   1          usb_setup_in();
+ 538   1      }
+ 539          
+ 540          void usb_set_interface()
+ 541          {
+ 542   1          if ((DeviceState != DEVSTATE_CONFIGURED) ||
+ 543   1              (Setup.bmRequestType != (OUT_DIRECT | STANDARD_REQUEST | INTERFACE_RECIPIENT)) ||
+C51 COMPILER V9.59.0.0   USB_REQ_STD                                                       09/24/2022 21:20:02 PAGE 10  
+
+ 544   1              (Setup.wValueH != 0) ||
+ 545   1              (Setup.wIndexH != 0) ||
+ 546   1              (Setup.wLength != 0))
+ 547   1          {
+ 548   2              usb_setup_stall();
+ 549   2              return;
+ 550   2          }
+ 551   1      
+ 552   1          usb_setup_status();
+ 553   1      }
+ 554          
+ 555          void usb_synch_frame()
+ 556          {
+ 557   1          usb_setup_stall();
+ 558   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   1042    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----       4
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

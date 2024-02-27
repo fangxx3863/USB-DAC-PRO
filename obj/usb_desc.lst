@@ -1,0 +1,208 @@
+C51 COMPILER V9.59.0.0   USB_DESC                                                          09/24/2022 21:20:02 PAGE 1   
+
+
+C51 COMPILER V9.59.0.0, COMPILATION OF MODULE USB_DESC
+OBJECT MODULE PLACED IN .\obj\usb_desc.obj
+COMPILER INVOKED BY: C:\Program Files\KEIL5\C51\BIN\C51.EXE src\usb_desc.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND P
+                    -RINT(.\obj\usb_desc.lst) TABS(2) OBJECT(.\obj\usb_desc.obj)
+
+line level    source
+
+   1          /*---------------------------------------------------------------------*/
+   2          /* --- STC MCU Limited ------------------------------------------------*/
+   3          /* --- STC 1T Series MCU Demo Programme -------------------------------*/
+   4          /* --- Mobile: (86)13922805190 ----------------------------------------*/
+   5          /* --- Fax: 86-0513-55012956,55012947,55012969 ------------------------*/
+   6          /* --- Tel: 86-0513-55012928,55012929,55012966 ------------------------*/
+   7          /* --- Web: www.STCMCU.com --------------------------------------------*/
+   8          /* --- Web: www.STCMCUDATA.com  ---------------------------------------*/
+   9          /* --- QQ:  800003751 -------------------------------------------------*/
+  10          /* 濡傛灉瑕佸湪绋嬪簭涓娇鐢ㄦ浠ｇ爜,璇峰湪绋嬪簭涓敞鏄庝娇鐢ㄤ簡STC
+             -鐨勮祫鏂欏強绋嬪簭        */
+  11          /*---------------------------------------------------------------------*/
+  12          
+  13          #include "stc.h"
+  14          #include "usb_desc.h"
+  15          
+  16          char code DEVICEDESC[18] =
+  17          {
+  18              0x12,                   //bLength(18);
+  19              0x01,                   //bDescriptorType(Device);
+  20              0x00,0x02,              //bcdUSB(2.00);
+  21              0x00,                   //bDeviceClass(0);
+  22              0x00,                   //bDeviceSubClass0);
+  23              0x00,                   //bDeviceProtocol(0);
+  24              0x40,                   //bMaxPacketSize0(64);
+  25              0xbf,0x34,              //idVendor(34bf);
+  26              0x03,0xff,              //idProduct(ff03);
+  27              0x00,0x01,              //bcdDevice(1.00);
+  28              0x01,                   //iManufacturer(1);
+  29              0x02,                   //iProduct(2);
+  30              0x00,                   //iSerialNumber(0);
+  31              0x01,                   //bNumConfigurations(1);
+  32          };
+  33          
+  34          char code CONFIGDESC[41] =
+  35          {
+  36              0x09,                   //bLength(9);
+  37              0x02,                   //bDescriptorType(Configuration);
+  38              0x29,0x00,              //wTotalLength(41);
+  39              0x01,                   //bNumInterfaces(1);
+  40              0x01,                   //bConfigurationValue(1);
+  41              0x00,                   //iConfiguration(0);
+  42              0x80,                   //bmAttributes(BUSPower);
+  43              0x96,                   //MaxPower(300mA);
+  44          
+  45              0x09,                   //bLength(9);
+  46              0x04,                   //bDescriptorType(Interface);
+  47              0x00,                   //bInterfaceNumber(0);
+  48              0x00,                   //bAlternateSetting(0);
+  49              0x02,                   //bNumEndpoints(2);
+  50              0x03,                   //bInterfaceClass(HID);
+  51              0x01,                   //bInterfaceSubClass(HID[0x00],Boot[0x01]);
+  52              0x01,                   //bInterfaceProtocol(Keyboard);
+  53              0x00,                   //iInterface(0);
+C51 COMPILER V9.59.0.0   USB_DESC                                                          09/24/2022 21:20:02 PAGE 2   
+
+  54          
+  55              0x09,                   //bLength(9);
+  56              0x21,                   //bDescriptorType(HID);
+  57              0x01,0x01,              //bcdHID(1.01);
+  58              0x00,                   //bCountryCode(0);
+  59              0x01,                   //bNumDescriptors(1);
+  60              0x22,                   //bDescriptorType(HID Report);
+  61              0x41,0x00,              //wDescriptorLength(65);
+  62          
+  63              0x07,                   //bLength(7);
+  64              0x05,                   //bDescriptorType(Endpoint);
+  65              0x81,                   //bEndpointAddress(EndPoint1 as IN);
+  66              0x03,                   //bmAttributes(Interrupt);
+  67              0x10,0x00,              //wMaxPacketSize(16);
+  68              0x01,                   //bInterval(1ms);
+  69          
+  70              0x07,                   //bLength(7);
+  71              0x05,                   //bDescriptorType(Endpoint);
+  72              0x01,                   //bEndpointAddress(EndPoint1 as OUT);
+  73              0x03,                   //bmAttributes(Interrupt);
+  74              0x01,0x00,              //wMaxPacketSize(1);
+  75              0x0a,                   //bInterval(10ms);
+  76          };
+  77          
+  78          /*
+  79          Input Report:
+  80          0   Modifierkeys (D0:LCtrl D1:LShift D2:LAlt D3:LGui D4:RCtrl D5:RShift D6:RAlt D7:RGui)
+  81          1 Reserved
+  82          2 Keycode 1
+  83          3 Keycode 2
+  84          4 Keycode 3
+  85          5 Keycode 4
+  86          6 Keycode 5
+  87          7 Keycode 6
+  88          Output Report:
+  89          0   LEDs (D0:NumLock D1:CapLock D2:ScrollLock)
+  90          */
+  91          char code HIDREPORTDESC[65] =
+  92          {
+  93              0x05,0x01,              //USAGE_PAGE(Generic Desktop);
+  94              0x09,0x06,              //USAGE(Keyboard);
+  95              0xa1,0x01,              //COLLECTION(Application);
+  96              0x05,0x07,              //  USAGE_PAGE(Keyboard);
+  97              0x19,0xe0,              //  USAGE_MINIMUM(224);
+  98              0x29,0xe7,              //  USAGE_MAXIMUM(255);
+  99              0x15,0x00,              //  LOGICAL_MINIMUM(0);
+ 100              0x25,0x01,              //  LOGICAL_MAXIMUM(1);
+ 101              0x75,0x01,              //  REPORT_SIZE(1);
+ 102              0x95,0x08,              //  REPORT_COUNT(8);
+ 103              0x81,0x02,              //  INPUT(Data,Variable,Absolute);
+ 104              
+ 105              0x75,0x08,              //  REPORT_SIZE(8);
+ 106              0x95,0x01,              //  REPORT_COUNT(1);
+ 107              0x81,0x01,              //  INPUT(Constant);
+ 108              
+ 109              0x19,0x00,              //  USAGE_MINIMUM(0);
+ 110              0x29,0x65,              //  USAGE_MAXIMUM(101);
+ 111              0x15,0x00,              //  LOGICAL_MINIMUM(0);
+ 112              0x25,0x65,              //  LOGICAL_MAXIMUM(101);
+ 113              0x75,0x08,              //  REPORT_SIZE(8);
+ 114              0x95,0x0E,              //  REPORT_COUNT(14);
+ 115              0x81,0x00,              //  INPUT(Data,Array);
+C51 COMPILER V9.59.0.0   USB_DESC                                                          09/24/2022 21:20:02 PAGE 3   
+
+ 116              
+ 117              0x05,0x08,              //  USAGE_PAGE(LEDs);
+ 118              0x19,0x01,              //  USAGE_MINIMUM(1);
+ 119              0x29,0x03,              //  USAGE_MAXIMUM(3);
+ 120              0x15,0x00,              //  LOGICAL_MINIMUM(0);
+ 121              0x25,0x01,              //  LOGICAL_MAXIMUM(1);
+ 122              0x75,0x01,              //  REPORT_SIZE(1);
+ 123              0x95,0x03,              //  REPORT_COUNT(3);
+ 124              0x91,0x02,              //  OUTPUT(Data,Variable,Absolute);
+ 125              
+ 126              0x75,0x05,              //  REPORT_SIZE(5);
+ 127              0x95,0x01,              //  REPORT_COUNT(1);
+ 128              0x91,0x01,              //  OUTPUT(Constant);
+ 129              
+ 130              0xc0,                   //END_COLLECTION;
+ 131          };
+ 132          
+ 133          char code LANGIDDESC[4] =
+ 134          {
+ 135              0x04,0x03,
+ 136              0x09,0x04,
+ 137          };
+ 138          
+ 139          char code MANUFACTDESC[8] =
+ 140          {
+ 141              0x08,0x03,
+ 142              'S',0,
+ 143              'T',0,
+ 144              'C',0,
+ 145          };
+ 146          
+ 147          char code PRODUCTDESC[34] =
+ 148          {
+ 149              0x22,0x03,
+ 150              'S',0,
+ 151              'T',0,
+ 152              'C',0,
+ 153              ' ',0,
+ 154              'U',0,
+ 155              'S',0,
+ 156              'B',0,
+ 157              ' ',0,
+ 158              'K',0,
+ 159              'e',0,
+ 160              'y',0,
+ 161              'b',0,
+ 162              'o',0,
+ 163              'a',0,
+ 164              'r',0,
+ 165              'd',0,
+ 166          };
+ 167          
+ 168          char code PACKET0[2] = 
+ 169          {
+ 170              0, 0,
+ 171          };
+ 172          
+ 173          char code PACKET1[2] = 
+ 174          {
+ 175              1, 0,
+ 176          };
+ 177          
+C51 COMPILER V9.59.0.0   USB_DESC                                                          09/24/2022 21:20:02 PAGE 4   
+
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   ----    ----
+   CONSTANT SIZE    =    174    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

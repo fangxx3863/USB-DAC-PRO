@@ -1,0 +1,103 @@
+C51 COMPILER V9.59.0.0   MAIN                                                              09/24/2022 21:20:02 PAGE 1   
+
+
+C51 COMPILER V9.59.0.0, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN .\obj\main.obj
+COMPILER INVOKED BY: C:\Program Files\KEIL5\C51\BIN\C51.EXE src\main.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT
+                    -(.\obj\main.lst) TABS(2) OBJECT(.\obj\main.obj)
+
+line level    source
+
+   1          /*---------------------------------------------------------------------*/
+   2          /* --- STC MCU Limited ------------------------------------------------*/
+   3          /* --- STC 1T Series MCU Demo Programme -------------------------------*/
+   4          /* --- Mobile: (86)13922805190 ----------------------------------------*/
+   5          /* --- Fax: 86-0513-55012956,55012947,55012969 ------------------------*/
+   6          /* --- Tel: 86-0513-55012928,55012929,55012966 ------------------------*/
+   7          /* --- Web: www.STCMCU.com --------------------------------------------*/
+   8          /* --- Web: www.STCMCUDATA.com  ---------------------------------------*/
+   9          /* --- QQ:  800003751 -------------------------------------------------*/
+  10          /* 如果要在程序中使用此代码,请在程序中注明使用了STC的资料及程序        */
+  11          /*---------------------------------------------------------------------*/
+  12          
+  13          /*************  功能说明    **************
+  14          
+  15          本例程基于STC8H8K64U为主控芯片的实验箱9进行编写测试.
+  16          
+  17          基于HID协议的USB键盘范例
+  18          
+  19          将代码下载到试验箱后即可实现USB键盘的基本功能
+  20          跑马灯中的LED17为NumLock灯、LED16为CapsLock灯、LED15为ScrollLock灯
+  21          矩阵按键中的KEY0~KEY7分别为键盘中的1~8
+  22          
+  23          下载时, 设置IRC工作频率为 24MHz.
+  24          
+  25          ******************************************/
+  26          
+  27          #include "stc.h"
+  28          #include "usb.h"
+  29          #include "usb_req_class.h"
+  30          #include "timer.h"
+  31          #include "WS2812.h"
+  32          
+  33          void sys_init();
+  34          
+  35          void ws2812_allot()
+  36          {
+  37   1          u8 i,j;
+  38   1          for(i=0;i<WSCOUNT;i++)
+  39   1            for(j=0;j<3;j++)
+  40   1            {
+  41   2              if(j==1)
+  42   2              WS2812_BUffer[i][j]=50;
+  43   2              else
+  44   2              WS2812_BUffer[i][j]=0;
+  45   2            }
+  46   1      }
+  47          
+  48          void main()
+  49          {
+  50   1          sys_init();
+  51   1          usb_init();
+  52   1          timer_init();
+  53   1      
+  54   1          EA = 1;
+C51 COMPILER V9.59.0.0   MAIN                                                              09/24/2022 21:20:02 PAGE 2   
+
+  55   1          
+  56   1          while (1)
+  57   1          {
+  58   2              usb_class_in();
+  59   2              ws2812_allot();
+  60   2              WS2812_Ser();
+  61   2          }
+  62   1      }
+  63          
+  64          void sys_init()
+  65          {
+  66   1        P_SW2 |= 0x80;  //扩展寄存器(XFR)访问使能
+  67   1      
+  68   1          P3M0 &= ~0x03;
+  69   1          P3M1 |= 0x03;
+  70   1          
+  71   1          IRC48MCR = 0x80;
+  72   1          while (!(IRC48MCR & 0x01));
+  73   1          
+  74   1          USBCLK = 0x00;
+  75   1          USBCON = 0x90;
+  76   1      }
+  77          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    112    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

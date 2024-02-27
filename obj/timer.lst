@@ -1,0 +1,59 @@
+C51 COMPILER V9.59.0.0   TIMER                                                             09/24/2022 21:20:03 PAGE 1   
+
+
+C51 COMPILER V9.59.0.0, COMPILATION OF MODULE TIMER
+OBJECT MODULE PLACED IN .\obj\timer.obj
+COMPILER INVOKED BY: C:\Program Files\KEIL5\C51\BIN\C51.EXE src\timer.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRIN
+                    -T(.\obj\timer.lst) TABS(2) OBJECT(.\obj\timer.obj)
+
+line level    source
+
+   1          /*---------------------------------------------------------------------*/
+   2          /* --- STC MCU Limited ------------------------------------------------*/
+   3          /* --- STC 1T Series MCU Demo Programme -------------------------------*/
+   4          /* --- Mobile: (86)13922805190 ----------------------------------------*/
+   5          /* --- Fax: 86-0513-55012956,55012947,55012969 ------------------------*/
+   6          /* --- Tel: 86-0513-55012928,55012929,55012966 ------------------------*/
+   7          /* --- Web: www.STCMCU.com --------------------------------------------*/
+   8          /* --- Web: www.STCMCUDATA.com  ---------------------------------------*/
+   9          /* --- QQ:  800003751 -------------------------------------------------*/
+  10          /* 濡傛灉瑕佸湪绋嬪簭涓娇鐢ㄦ浠ｇ爜,璇峰湪绋嬪簭涓敞鏄庝娇鐢ㄤ簡STC
+             -鐨勮祫鏂欏強绋嬪簭        */
+  11          /*---------------------------------------------------------------------*/
+  12          
+  13          #include "stc.h"
+  14          #include "timer.h"
+  15          
+  16          #define TM_1MS      (65536 - FOSC/1000)
+  17          
+  18          BOOL f1ms;
+  19          
+  20          void timer_init()
+  21          {
+  22   1          f1ms = 0;
+  23   1          AUXR |= 0x80;
+  24   1          TMOD &= ~0x0f;
+  25   1          TL0 = TM_1MS;
+  26   1          TH0 = TM_1MS >> 8;
+  27   1          TR0 = 1;
+  28   1          ET0 = 1;
+  29   1      }
+  30          
+  31          void timer0_isr() interrupt 1
+  32          {
+  33   1          f1ms = 1;
+  34   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =     22    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =      1    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

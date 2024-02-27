@@ -1,0 +1,550 @@
+C51 COMPILER V9.59.0.0   USB                                                               09/24/2022 21:20:02 PAGE 1   
+
+
+C51 COMPILER V9.59.0.0, COMPILATION OF MODULE USB
+OBJECT MODULE PLACED IN .\obj\usb.obj
+COMPILER INVOKED BY: C:\Program Files\KEIL5\C51\BIN\C51.EXE src\usb.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(
+                    -.\obj\usb.lst) TABS(2) OBJECT(.\obj\usb.obj)
+
+line level    source
+
+   1          /*---------------------------------------------------------------------*/
+   2          /* --- STC MCU Limited ------------------------------------------------*/
+   3          /* --- STC 1T Series MCU Demo Programme -------------------------------*/
+   4          /* --- Mobile: (86)13922805190 ----------------------------------------*/
+   5          /* --- Fax: 86-0513-55012956,55012947,55012969 ------------------------*/
+   6          /* --- Tel: 86-0513-55012928,55012929,55012966 ------------------------*/
+   7          /* --- Web: www.STCMCU.com --------------------------------------------*/
+   8          /* --- Web: www.STCMCUDATA.com  ---------------------------------------*/
+   9          /* --- QQ:  800003751 -------------------------------------------------*/
+  10          /* 濡傛灉瑕佸湪绋嬪簭涓娇鐢ㄦ浠ｇ爜,璇峰湪绋嬪簭涓敞鏄庝娇鐢ㄤ簡STC
+             -鐨勮祫鏂欏強绋嬪簭        */
+  11          /*---------------------------------------------------------------------*/
+  12          
+  13          #include "stc.h"
+  14          #include "usb.h"
+  15          #include "usb_req_std.h"
+  16          #include "usb_req_class.h"
+  17          #include "usb_req_vendor.h"
+  18          #include "util.h"
+  19          
+  20          BYTE DeviceState;
+  21          SETUP Setup;
+  22          EPSTATE Ep0State;
+  23          BYTE InEpState;
+  24          BYTE OutEpState;
+  25          
+  26          BOOL UsbInBusy;
+  27          
+  28          BYTE xdata UsbBuffer[256];
+  29          
+  30          void usb_init()
+  31          {
+  32   1          usb_write_reg(FADDR, 0x00);
+  33   1          usb_write_reg(POWER, 0x81);
+  34   1          usb_write_reg(INTRIN1E, 0x3f);
+  35   1          usb_write_reg(INTROUT1E, 0x3f);
+  36   1          usb_write_reg(INTRUSBE, 0x07);
+  37   1          usb_write_reg(POWER, 0x01);
+  38   1      
+  39   1          DeviceState = DEVSTATE_DEFAULT;
+  40   1          Ep0State.bState = EPSTATE_IDLE;
+  41   1          InEpState = 0x00;
+  42   1          OutEpState = 0x00;
+  43   1      
+  44   1          UsbInBusy = 0;
+  45   1      
+  46   1          IE2 |= 0x80;    //EUSB = 1;
+  47   1      }
+  48          
+  49          BYTE usb_read_reg(BYTE addr)
+  50          {
+  51   1        BYTE dat;
+  52   1      
+  53   1        while (USBADR & 0x80);
+C51 COMPILER V9.59.0.0   USB                                                               09/24/2022 21:20:02 PAGE 2   
+
+  54   1        USBADR = addr | 0x80;
+  55   1        while (USBADR & 0x80);
+  56   1        dat = USBDAT;
+  57   1      
+  58   1        return dat;
+  59   1      }
+  60          
+  61          void usb_write_reg(BYTE addr, BYTE dat)
+  62          {
+  63   1        while (USBADR & 0x80);
+  64   1        USBADR = addr & 0x7f;
+  65   1        USBDAT = dat;
+  66   1      }
+  67          
+  68          BYTE usb_read_fifo(BYTE fifo, BYTE *pdat)
+  69          {
+  70   1          BYTE cnt;
+  71   1          BYTE ret;
+  72   1      
+  73   1          ret = cnt = usb_read_reg(COUNT0);
+  74   1          while (cnt--)
+  75   1          {
+  76   2            *pdat++ = usb_read_reg(fifo);
+  77   2          }
+  78   1      
+  79   1          return ret;
+  80   1      }
+  81          
+  82          void usb_write_fifo(BYTE fifo, BYTE *pdat, BYTE cnt)
+  83          {
+  84   1        while (cnt--)
+  85   1        {
+  86   2              usb_write_reg(fifo, *pdat++);
+  87   2          }
+  88   1      }
+  89          
+  90          void usb_isr() interrupt 25
+  91          {
+  92   1          BYTE intrusb;
+  93   1          BYTE intrin;
+  94   1          BYTE introut;
+  95   1      
+  96   1          intrusb = usb_read_reg(INTRUSB);
+  97   1          intrin = usb_read_reg(INTRIN1);
+  98   1          introut = usb_read_reg(INTROUT1);
+  99   1      
+ 100   1          if (intrusb & RSUIF) usb_resume();
+ 101   1          if (intrusb & RSTIF) usb_reset();
+ 102   1      
+ 103   1          if (intrin & EP0IF) usb_setup();
+ 104   1      
+ 105   1      #ifdef EN_EP1IN
+ 106   1          if (intrin & EP1INIF) usb_in_ep1();
+ 107   1      #endif
+ 108   1      #ifdef EN_EP2IN
+                  if (intrin & EP2INIF) usb_in_ep2();
+              #endif
+ 111   1      #ifdef EN_EP3IN
+                  if (intrin & EP3INIF) usb_in_ep3();
+              #endif
+ 114   1      #ifdef EN_EP4IN
+                  if (intrin & EP4INIF) usb_in_ep4();
+C51 COMPILER V9.59.0.0   USB                                                               09/24/2022 21:20:02 PAGE 3   
+
+              #endif
+ 117   1      #ifdef EN_EP5IN
+                  if (intrin & EP5INIF) usb_in_ep5();
+              #endif
+ 120   1      
+ 121   1      #ifdef EN_EP1OUT
+ 122   1          if (introut & EP1OUTIF) usb_out_ep1();
+ 123   1      #endif
+ 124   1      #ifdef EN_EP2OUT
+                  if (introut & EP2OUTIF) usb_out_ep2();
+              #endif
+ 127   1      #ifdef EN_EP3OUT
+                  if (introut & EP3OUTIF) usb_out_ep3();
+              #endif
+ 130   1      #ifdef EN_EP4OUT
+                  if (introut & EP4OUTIF) usb_out_ep4();
+              #endif
+ 133   1      #ifdef EN_EP5OUT
+                  if (introut & EP5OUTIF) usb_out_ep5();
+              #endif
+ 136   1      
+ 137   1          if (intrusb & SUSIF) usb_suspend();
+ 138   1      }
+ 139          
+ 140          void usb_resume()
+ 141          {
+ 142   1      }
+ 143          
+ 144          void usb_reset()
+ 145          {
+ 146   1          usb_write_reg(FADDR, 0x00);
+ 147   1          DeviceState = DEVSTATE_DEFAULT;
+ 148   1          Ep0State.bState = EPSTATE_IDLE;
+ 149   1      
+ 150   1      #ifdef EN_EP1IN
+ 151   1          usb_write_reg(INDEX, 1);
+ 152   1          usb_write_reg(INCSR1, INCLRDT | INFLUSH);
+ 153   1      #endif
+ 154   1      #ifdef EN_EP2IN
+                  usb_write_reg(INDEX, 2);
+                  usb_write_reg(INCSR1, INCLRDT | INFLUSH);
+              #endif
+ 158   1      #ifdef EN_EP3IN
+                  usb_write_reg(INDEX, 3);
+                  usb_write_reg(INCSR1, INCLRDT | INFLUSH);
+              #endif
+ 162   1      #ifdef EN_EP4IN
+                  usb_write_reg(INDEX, 4);
+                  usb_write_reg(INCSR1, INCLRDT | INFLUSH);
+              #endif
+ 166   1      #ifdef EN_EP5IN
+                  usb_write_reg(INDEX, 5);
+                  usb_write_reg(INCSR1, INCLRDT | INFLUSH);
+              #endif
+ 170   1      #ifdef EN_EP1OUT
+ 171   1          usb_write_reg(INDEX, 1);
+ 172   1          usb_write_reg(OUTCSR1, OUTCLRDT | OUTFLUSH);
+ 173   1      #endif
+ 174   1      #ifdef EN_EP2OUT
+                  usb_write_reg(INDEX, 2);
+                  usb_write_reg(OUTCSR1, OUTCLRDT | OUTFLUSH);
+              #endif
+C51 COMPILER V9.59.0.0   USB                                                               09/24/2022 21:20:02 PAGE 4   
+
+ 178   1      #ifdef EN_EP3OUT
+                  usb_write_reg(INDEX, 3);
+                  usb_write_reg(OUTCSR1, OUTCLRDT | OUTFLUSH);
+              #endif
+ 182   1      #ifdef EN_EP4OUT
+                  usb_write_reg(INDEX, 4);
+                  usb_write_reg(OUTCSR1, OUTCLRDT | OUTFLUSH);
+              #endif
+ 186   1      #ifdef EN_EP5OUT
+                  usb_write_reg(INDEX, 5);
+                  usb_write_reg(OUTCSR1, OUTCLRDT | OUTFLUSH);
+              #endif
+ 190   1          usb_write_reg(INDEX, 0);
+ 191   1      }
+ 192          
+ 193          void usb_suspend()
+ 194          {
+ 195   1      }
+ 196          
+ 197          void usb_setup()
+ 198          {
+ 199   1          BYTE csr;
+ 200   1      
+ 201   1          usb_write_reg(INDEX, 0);
+ 202   1          csr = usb_read_reg(CSR0);
+ 203   1      
+ 204   1          if (csr & STSTL)
+ 205   1          {
+ 206   2              usb_write_reg(CSR0, csr & ~SDSTL);
+ 207   2              Ep0State.bState = EPSTATE_IDLE;
+ 208   2          }
+ 209   1          if (csr & SUEND)
+ 210   1          {
+ 211   2              usb_write_reg(CSR0, csr & ~SSUEND);
+ 212   2          }
+ 213   1      
+ 214   1          switch (Ep0State.bState)
+ 215   1          {
+ 216   2          case EPSTATE_IDLE:
+ 217   2              if (csr & OPRDY)
+ 218   2              {
+ 219   3                  usb_read_fifo(FIFO0, (BYTE *)&Setup);
+ 220   3                  Setup.wLength = reverse2(Setup.wLength);
+ 221   3                  switch (Setup.bmRequestType & REQUEST_MASK)
+ 222   3                  {
+ 223   4                  case STANDARD_REQUEST:
+ 224   4                      usb_req_std();
+ 225   4                      break;
+ 226   4                  case CLASS_REQUEST:
+ 227   4                      usb_req_class();
+ 228   4                      break;
+ 229   4                  case VENDOR_REQUEST:
+ 230   4                      usb_req_vendor();
+ 231   4                      break;
+ 232   4                  default:
+ 233   4                      usb_setup_stall();
+ 234   4                      return;
+ 235   4                  }
+ 236   3              }
+ 237   2              break;
+ 238   2          case EPSTATE_DATAIN:
+ 239   2              usb_ctrl_in();
+C51 COMPILER V9.59.0.0   USB                                                               09/24/2022 21:20:02 PAGE 5   
+
+ 240   2              break;
+ 241   2          case EPSTATE_DATAOUT:
+ 242   2              usb_ctrl_out();
+ 243   2              break;
+ 244   2          }
+ 245   1      }
+ 246          
+ 247          void usb_setup_stall()
+ 248          {
+ 249   1          Ep0State.bState = EPSTATE_STALL;
+ 250   1          usb_write_reg(CSR0, SOPRDY | SDSTL);
+ 251   1      }
+ 252          
+ 253          void usb_setup_in()
+ 254          {
+ 255   1          Ep0State.bState = EPSTATE_DATAIN;
+ 256   1          usb_write_reg(CSR0, SOPRDY);
+ 257   1          usb_ctrl_in();
+ 258   1      }
+ 259          
+ 260          void usb_setup_out()
+ 261          {
+ 262   1          Ep0State.bState = EPSTATE_DATAOUT;
+ 263   1          usb_write_reg(CSR0, SOPRDY);
+ 264   1      }
+ 265          
+ 266          void usb_setup_status()
+ 267          {
+ 268   1          Ep0State.bState = EPSTATE_IDLE;
+ 269   1          usb_write_reg(CSR0, SOPRDY | DATEND);
+ 270   1      }
+ 271          
+ 272          void usb_ctrl_in()
+ 273          {
+ 274   1          BYTE csr;
+ 275   1          BYTE cnt;
+ 276   1      
+ 277   1          usb_write_reg(INDEX, 0);
+ 278   1          csr = usb_read_reg(CSR0);
+ 279   1          if (csr & IPRDY) return;
+ 280   1      
+ 281   1          cnt = Ep0State.wSize > EP0_SIZE ? EP0_SIZE : Ep0State.wSize;
+ 282   1          usb_write_fifo(FIFO0, Ep0State.pData, cnt);
+ 283   1          Ep0State.wSize -= cnt;
+ 284   1          Ep0State.pData += cnt;
+ 285   1          if (Ep0State.wSize == 0)
+ 286   1          {
+ 287   2              usb_write_reg(CSR0, IPRDY | DATEND);
+ 288   2              Ep0State.bState = EPSTATE_IDLE;
+ 289   2          }
+ 290   1          else
+ 291   1          {
+ 292   2              usb_write_reg(CSR0, IPRDY);
+ 293   2          }
+ 294   1      }
+ 295          
+ 296          void usb_ctrl_out()
+ 297          {
+ 298   1          BYTE csr;
+ 299   1          BYTE cnt;
+ 300   1      
+ 301   1          usb_write_reg(INDEX, 0);
+C51 COMPILER V9.59.0.0   USB                                                               09/24/2022 21:20:02 PAGE 6   
+
+ 302   1          csr = usb_read_reg(CSR0);
+ 303   1          if (!(csr & OPRDY)) return;
+ 304   1      
+ 305   1          cnt = usb_read_fifo(FIFO0, Ep0State.pData);
+ 306   1          Ep0State.wSize -= cnt;
+ 307   1          Ep0State.pData += cnt;
+ 308   1          if (Ep0State.wSize == 0)
+ 309   1          {
+ 310   2              usb_write_reg(CSR0, SOPRDY | DATEND);
+ 311   2              Ep0State.bState = EPSTATE_IDLE;
+ 312   2          }
+ 313   1          else
+ 314   1          {
+ 315   2              usb_write_reg(CSR0, SOPRDY);
+ 316   2          }
+ 317   1      }
+ 318          
+ 319          BYTE usb_bulk_intr_out(BYTE *pData, BYTE ep)
+ 320          {
+ 321   1          BYTE cnt;
+ 322   1      
+ 323   1          cnt = usb_read_fifo((BYTE)(FIFO0 + ep), pData);
+ 324   1          usb_write_reg(OUTCSR1, 0);
+ 325   1      
+ 326   1          return cnt;
+ 327   1      }
+ 328          
+ 329          #ifdef EN_EP1IN
+ 330          void usb_in_ep1()
+ 331          {
+ 332   1          BYTE csr;
+ 333   1      
+ 334   1          usb_write_reg(INDEX, 1);
+ 335   1          csr = usb_read_reg(INCSR1);
+ 336   1          if (csr & INSTSTL)
+ 337   1          {
+ 338   2              usb_write_reg(INCSR1, INCLRDT);
+ 339   2          }
+ 340   1          if (csr & INUNDRUN)
+ 341   1          {
+ 342   2              usb_write_reg(INCSR1, 0);
+ 343   2          }
+ 344   1      
+ 345   1          UsbInBusy = 0;
+ 346   1      }
+ 347          #endif
+ 348          
+ 349          #ifdef EN_EP2IN
+              void usb_in_ep2()
+              {
+                  BYTE csr;
+              
+                  usb_write_reg(INDEX, 2);
+                  csr = usb_read_reg(INCSR1);
+                  if (csr & INSTSTL)
+                  {
+                      usb_write_reg(INCSR1, INCLRDT);
+                  }
+                  if (csr & INUNDRUN)
+                  {
+                      usb_write_reg(INCSR1, 0);
+                  }
+C51 COMPILER V9.59.0.0   USB                                                               09/24/2022 21:20:02 PAGE 7   
+
+              }
+              #endif
+ 366          
+ 367          #ifdef EN_EP3IN
+              void usb_in_ep3()
+              {
+                  BYTE csr;
+              
+                  usb_write_reg(INDEX, 3);
+                  csr = usb_read_reg(INCSR1);
+                  if (csr & INSTSTL)
+                  {
+                      usb_write_reg(INCSR1, INCLRDT);
+                  }
+                  if (csr & INUNDRUN)
+                  {
+                      usb_write_reg(INCSR1, 0);
+                  }
+              }
+              #endif
+ 384          
+ 385          #ifdef EN_EP4IN
+              void usb_in_ep4()
+              {
+                  BYTE csr;
+              
+                  usb_write_reg(INDEX, 4);
+                  csr = usb_read_reg(INCSR1);
+                  if (csr & INSTSTL)
+                  {
+                      usb_write_reg(INCSR1, INCLRDT);
+                  }
+                  if (csr & INUNDRUN)
+                  {
+                      usb_write_reg(INCSR1, 0);
+                  }
+              }
+              #endif
+ 402          
+ 403          #ifdef EN_EP5IN
+              void usb_in_ep5()
+              {
+                  BYTE csr;
+              
+                  usb_write_reg(INDEX, 5);
+                  csr = usb_read_reg(INCSR1);
+                  if (csr & INSTSTL)
+                  {
+                      usb_write_reg(INCSR1, INCLRDT);
+                  }
+                  if (csr & INUNDRUN)
+                  {
+                      usb_write_reg(INCSR1, 0);
+                  }
+              }
+              #endif
+ 420          
+ 421          #ifdef EN_EP1OUT
+ 422          void usb_out_ep1()
+ 423          {
+ 424   1          BYTE csr;
+ 425   1      
+C51 COMPILER V9.59.0.0   USB                                                               09/24/2022 21:20:02 PAGE 8   
+
+ 426   1          usb_write_reg(INDEX, 1);
+ 427   1          csr = usb_read_reg(OUTCSR1);
+ 428   1          if (csr & OUTSTSTL)
+ 429   1          {
+ 430   2              usb_write_reg(OUTCSR1, OUTCLRDT);
+ 431   2          }
+ 432   1          if (csr & OUTOPRDY)
+ 433   1          {
+ 434   2              usb_class_out();
+ 435   2          }
+ 436   1      }
+ 437          #endif
+ 438          
+ 439          #ifdef EN_EP2OUT
+              void usb_out_ep2()
+              {
+                  BYTE csr;
+              
+                  usb_write_reg(INDEX, 2);
+                  csr = usb_read_reg(OUTCSR1);
+                  if (csr & OUTSTSTL)
+                  {
+                      usb_write_reg(OUTCSR1, OUTCLRDT);
+                  }
+                  if (csr & OUTOPRDY)
+                  {
+                      usb_bulk_intr_out(Ep2OutBuffer, 2);
+                  }
+              }
+              #endif
+ 456          
+ 457          #ifdef EN_EP3OUT
+              void usb_out_ep3()
+              {
+                  BYTE csr;
+              
+                  usb_write_reg(INDEX, 3);
+                  csr = usb_read_reg(OUTCSR1);
+                  if (csr & OUTSTSTL)
+                  {
+                      usb_write_reg(OUTCSR1, OUTCLRDT);
+                  }
+                  if (csr & OUTOPRDY)
+                  {
+                      usb_bulk_intr_out(Ep3OutBuffer, 3);
+                  }
+              }
+              #endif
+ 474          
+ 475          #ifdef EN_EP4OUT
+              void usb_out_ep4()
+              {
+                  BYTE csr;
+              
+                  usb_write_reg(INDEX, 4);
+                  csr = usb_read_reg(OUTCSR1);
+                  if (csr & OUTSTSTL)
+                  {
+                      usb_write_reg(OUTCSR1, OUTCLRDT);
+                  }
+                  if (csr & OUTOPRDY)
+                  {
+C51 COMPILER V9.59.0.0   USB                                                               09/24/2022 21:20:02 PAGE 9   
+
+                      usb_bulk_intr_out(Ep4OutBuffer, 4);
+                  }
+              }
+              #endif
+ 492          
+ 493          #ifdef EN_EP5OUT
+              void usb_out_ep5()
+              {
+                  BYTE csr;
+              
+                  usb_write_reg(INDEX, 5);
+                  csr = usb_read_reg(OUTCSR1);
+                  if (csr & OUTSTSTL)
+                  {
+                      usb_write_reg(OUTCSR1, OUTCLRDT);
+                  }
+                  if (csr & OUTOPRDY)
+                  {
+                      usb_bulk_intr_out(Ep5OutBuffer, 5);
+                  }
+              }
+              #endif
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    742    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =    256    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =     17      11
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =      1    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
