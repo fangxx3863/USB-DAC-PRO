@@ -79,6 +79,8 @@ u8 GetECDir() {
 /********************* INT2中断函数 *************************/
 void INT2_int (void) interrupt 10     //进中断时已经清除标志
 {
+    if (EC_Dir >= 255) EC_Dir = 254;
+    if (EC_Dir <= 1) EC_Dir = 1;
     if (EC_B) {
         EC_Path = 1;
         if (EC_Dir < 255) EC_Dir++;
@@ -94,6 +96,8 @@ void INT2_int (void) interrupt 10     //进中断时已经清除标志
 void INT3_int (void) interrupt 11     //进中断时已经清除标志
 {
     #if MULTIPLE_EC_COUNT
+    if (EC_Dir >= 255) EC_Dir = 254;
+    if (EC_Dir <= 1) EC_Dir = 1;
     if (EC_A) {
         EC_Path = -1;
         if (EC_Dir < 255) EC_Dir--;

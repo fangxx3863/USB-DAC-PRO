@@ -178,7 +178,7 @@ void sys_init() {
 /********************** 低压中断函数 ************************/
 void LVD_Routine(void) interrupt 6
 {
-    VOL_MUTE = 0;     // 开启静音
     SetVolume(0, 0);  // 调低音量
+    VOL_MUTE = 0;     // 开启静音
 }
 #endif
