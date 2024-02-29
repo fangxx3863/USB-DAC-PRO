@@ -77,8 +77,9 @@ void main() {
 
     // 主循环
     while (1) {
-        if (GetECFlag()) {
+        if (GetECFlag() && EC_PSW) {
             SetVolume(GetECDir(), GetECDir());
+            _mute_sta = 0;
             EEPR_Counter = 0;
             EEPR_STATUS = EEPR_CHANGE;
             // printf("TEST-DEC: %d\n", (u16)66);
@@ -173,9 +174,11 @@ void sys_init() {
     // while(DeviceState != DEVSTATE_CONFIGURED);              //等待USB完成配置
 }
 
+#if IS_LVD_MUTE
 /********************** 低压中断函数 ************************/
 void LVD_Routine(void) interrupt 6
 {
     VOL_MUTE = 0;     // 开启静音
     SetVolume(0, 0);  // 调低音量
 }
+#endif

@@ -7,6 +7,10 @@
 #include "STC8H.h"
 #include "config.h"
 
+// 用户定义
+#define MULTIPLE_EC_COUNT 1     // 是否加倍旋钮点数
+#define IS_LVD_MUTE       1     // 是否开启低压中断时静音
+
 // 定义别名
 #define USB_MUTE P16
 #define VOL_MUTE P33

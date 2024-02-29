@@ -26,7 +26,7 @@ void ScanECSW() {
 
     case SW_DEBOUNCE:
         SW_Counter++;
-        if (SW_Counter >= 10000) SW_Counter = 10000;
+        if (SW_Counter >= 65535) SW_Counter = 65535;
         if (SW_Counter > 100 && (!EC_PSW)) SW_STATUS = SW_SHORT_PRESS_DET;
         else SW_STATUS = SW_SCAN;
         break;
@@ -93,5 +93,15 @@ void INT2_int (void) interrupt 10     //进中断时已经清除标志
 /********************* INT3中断函数 *************************/
 void INT3_int (void) interrupt 11     //进中断时已经清除标志
 {
-   
+    #if MULTIPLE_EC_COUNT
+    if (EC_A) {
+        EC_Path = -1;
+        if (EC_Dir < 255) EC_Dir--;
+    } else {
+        EC_Path = 1;
+        if (EC_Dir > 0) EC_Dir++;
+    }
+    EC_Flag = 1;
+    // printf("INT3!\n");
+    #endif
 }
