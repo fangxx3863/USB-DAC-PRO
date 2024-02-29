@@ -61,6 +61,7 @@ void main() {
     ES9028_Init();
 
     // 音量IC调整
+    delay(20);      // 等DAC软启动完成
     VOL_ZCEN = 1;   // 打开音量控制过零检测
     VOL_MUTE = 1;   // 关闭静音
 
@@ -170,4 +171,11 @@ void sys_init() {
 
     EA = 1;     //允许总中断
     // while(DeviceState != DEVSTATE_CONFIGURED);              //等待USB完成配置
+}
+
+/********************** 低压中断函数 ************************/
+void LVD_Routine(void) interrupt 6
+{
+    VOL_MUTE = 0;     // 开启静音
+    SetVolume(0, 0);  // 调低音量
 }
