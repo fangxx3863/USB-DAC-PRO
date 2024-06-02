@@ -17,7 +17,7 @@
 *.pch
 
 # Libraries
-*.lib
+#*.lib
 *.a
 *.la
 *.lo
@@ -29,12 +29,12 @@
 *.dylib
 
 # Executables
-*.exe
+#*.exe
 *.out
 *.app
 *.i*86
 *.x86_64
-*.hex
+#*.hex
 
 # Debug files
 *.dSYM/
