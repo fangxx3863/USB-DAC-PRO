@@ -67,7 +67,8 @@
       "custom_dep": {
         "name": "default",
         "incList": [
-          "../../../../../Program Files/KEIL5/C51/INC/STC"
+          "../../../../../Program Files/KEIL5/C51/INC/STC",
+          "src"
         ],
         "libList": [],
         "sourceDirList": [],
